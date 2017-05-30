@@ -82,15 +82,15 @@ pixels** triangleDraw(vertexesProj *triangle, int c1, int c2, int c3, double* no
     if(triangle[0].x>=1920 || triangle[1].x>=1920 || triangle[2].x>=1920 || triangle[0].y>=1080 || triangle[1].y>=1080 || triangle[2].y>=1080)
         return rasProt;
     rasProt=createRasProtX(1080, 1920);
-    bresenham(rasProt, triangle[0], triangle[1], c1, c2, c3, normal);
-    bresenham(rasProt, triangle[1], triangle[2], c1, c2, c3, normal);
-    bresenham(rasProt, triangle[2], triangle[0], c1, c2, c3, normal);
-    scanline(rasProt, c1, c2, c3, normal);
+    bresenham(&rasProt, triangle[0], triangle[1], c1, c2, c3, normal);
+    bresenham(&rasProt, triangle[1], triangle[2], c1, c2, c3, normal);
+    bresenham(&rasProt, triangle[2], triangle[0], c1, c2, c3, normal);
+    scanline(&rasProt, c1, c2, c3, normal);
     return rasProt;
 }
 
 // Esta función se encarga de hacer el cálculo de las líneas a dibujar junto con el zBuffer de cada pixel
-void bresenham(pixels** raster1, vertexesProj point1, vertexesProj point2, int c1, int c2, int c3, double* normal){
+void bresenham(pixels*** raster1, vertexesProj point1, vertexesProj point2, int c1, int c2, int c3, double* normal){
     int x1=point1.x, x2=point2.x, y1=point1.y, y2=point2.y;
     double dz, zB;
     zB=point1.zBuf<point2.zBuf ? point1.zBuf : point2.zBuf;
@@ -99,13 +99,13 @@ void bresenham(pixels** raster1, vertexesProj point1, vertexesProj point2, int c
     int dy = abs(y2-y1), sy = y1<y2 ? 1 : -1;
     int err = (dx>dy ? dx : -dy)/2, e2;
     for(;;) {
-        raster1[y1][x1].r = c1;
-        raster1[y1][x1].g = c2;
-        raster1[y1][x1].b = c3;
-        raster1[y1][x1].zBuffer=zB;
-        raster1[y1][x1].normal[0]=normal[0];
-        raster1[y1][x1].normal[1]=normal[1];
-        raster1[y1][x1].normal[2]=normal[2];
+        raster1[0][y1][x1].r = c1;
+        raster1[0][y1][x1].g = c2;
+        raster1[0][y1][x1].b = c3;
+        raster1[0][y1][x1].zBuffer=zB;
+        raster1[0][y1][x1].normal[0]=normal[0];
+        raster1[0][y1][x1].normal[1]=normal[1];
+        raster1[0][y1][x1].normal[2]=normal[2];
         // raster1[y1][x1].normal=normal de cualuier punto;
         if (x1 == x2 && y1 == y2) break;
         e2 = err;
@@ -122,20 +122,20 @@ void bresenham(pixels** raster1, vertexesProj point1, vertexesProj point2, int c
 }
 
 // Esta función se encarga de darle superficie al triangulo
-void scanline(pixels** raster1, int c1, int c2, int c3, double* normal){
+void scanline(pixels*** raster1, int c1, int c2, int c3, double* normal){
     int x1, x2, flag=0;
     double zB1, zB2, dz;
     for (int i = 0; i < 1080; ++i) {
         flag=0;
         for (int j = 0; j < 1920; ++j) {
-            if(raster1[i][j].zBuffer>-100000){
-                if(raster1[i][j+1].zBuffer==-100000){
+            if(raster1[0][i][j].zBuffer>-100000){
+                if(raster1[0][i][j+1].zBuffer==-100000){
                     if(flag==0){
-                        zB1=raster1[i][j].zBuffer;
+                        zB1=raster1[0][i][j].zBuffer;
                         x1=j;
                         ++flag;
                     } else if(flag==1){
-                        zB2=raster1[i][j].zBuffer;
+                        zB2=raster1[0][i][j].zBuffer;
                         x2=j;
                         dz=((zB2-zB1)/(x2-x1));
                         ++flag;
@@ -145,14 +145,14 @@ void scanline(pixels** raster1, int c1, int c2, int c3, double* normal){
                     }
                 }
             } else if(flag==2){
-                raster1[i][j].r=c1;
-                raster1[i][j].g=c2;
-                raster1[i][j].b=c3;
+                raster1[0][i][j].r=c1;
+                raster1[0][i][j].g=c2;
+                raster1[0][i][j].b=c3;
                 zB1+=dz;
-                raster1[i][j].zBuffer=zB1;
-                raster1[i][j].normal[0]=normal[0];
-                raster1[i][j].normal[1]=normal[1];
-                raster1[i][j].normal[2]=normal[2];
+                raster1[0][i][j].zBuffer=zB1;
+                raster1[0][i][j].normal[0]=normal[0];
+                raster1[0][i][j].normal[1]=normal[1];
+                raster1[0][i][j].normal[2]=normal[2];
             }
         }
     }
@@ -180,18 +180,18 @@ void drawFace2Raster(pixels** rasProt, faces* fList, int fListSize, edges* eList
             auxVP[1]=vListProj[eList[fList[i].e2].v1];
             auxVP[2]=vListProj[eList[fList[i].e3].v1];
             auxRasProt= triangleDraw(auxVP, 38, 220, 226, normal);
-        }
-        if(auxRasProt){
-            for (int j = 0; j < 1080; ++j) {
-                for (int k = 0; k < 1920; ++k) {
-                    if(auxRasProt[j][k].zBuffer>rasProt[j][k].zBuffer){
-                        rasProt[j][k].r=auxRasProt[j][k].r;
-                        rasProt[j][k].g=auxRasProt[j][k].g;
-                        rasProt[j][k].b=auxRasProt[j][k].b;
-                        rasProt[j][k].zBuffer=auxRasProt[j][k].zBuffer;
-                        rasProt[j][k].normal[0]=auxRasProt[j][k].normal[0];
-                        rasProt[j][k].normal[1]=auxRasProt[j][k].normal[1];
-                        rasProt[j][k].normal[2]=auxRasProt[j][k].normal[2];
+            if(auxRasProt!=NULL){
+                for (int j = 0; j < 1080; ++j) {
+                    for (int k = 0; k < 1920; ++k) {
+                        if(auxRasProt[j][k].zBuffer>rasProt[j][k].zBuffer){
+                            rasProt[j][k].r=auxRasProt[j][k].r;
+                            rasProt[j][k].g=auxRasProt[j][k].g;
+                            rasProt[j][k].b=auxRasProt[j][k].b;
+                            rasProt[j][k].zBuffer=auxRasProt[j][k].zBuffer;
+                            rasProt[j][k].normal[0]=auxRasProt[j][k].normal[0];
+                            rasProt[j][k].normal[1]=auxRasProt[j][k].normal[1];
+                            rasProt[j][k].normal[2]=auxRasProt[j][k].normal[2];
+                        }
                     }
                 }
             }
