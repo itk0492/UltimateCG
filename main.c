@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
     //zAxisRotation(&vList, vListSize, 1, mid[0], mid[1], mid[2]);
     vListProjection(vList, vListSize, &vListProj, 40, 0, 0);
     printf("\nvListProj created and projected.");
-    drawFace2Raster(raster, fList, fListSize, eList, vListProj);
+    drawFace2Raster(rasProt, fList, fListSize, eList, vListProj, vList, raster);
     printf("\nFaces draw.");
     printRaster2FileRGB("gen.ppm", raster, 1080, 1920);
     printf("\n%lf %lf %lf %lf %lf", vList[0].x, vList[1].x, vList[2].x, vList[500].x, vList[vListSize-1].x);
