@@ -75,18 +75,16 @@ void cleanRasterRGB(unsigned char ***raster, int columns, int rows){
 }
 
 // Esta función se encarga de dibujar un triangulo de la figura
-pixels** triangleDraw(vertexesProj *triangle, int c1, int c2, int c3, double* normal){
-    pixels** rasProt=NULL;
+int triangleDraw(vertexesProj *triangle, int c1, int c2, int c3, double* normal, pixels*** rasProt){
     if(triangle[0].x<0 || triangle[1].x<0 || triangle[2].x<0 || triangle[0].y<0 || triangle[1].y<0 || triangle[2].y<0)
-        return rasProt;
+        return -1;
     if(triangle[0].x>=1920 || triangle[1].x>=1920 || triangle[2].x>=1920 || triangle[0].y>=1080 || triangle[1].y>=1080 || triangle[2].y>=1080)
-        return rasProt;
-    rasProt=createRasProtX(1080, 1920);
-    bresenham(&rasProt, triangle[0], triangle[1], c1, c2, c3, normal);
-    bresenham(&rasProt, triangle[1], triangle[2], c1, c2, c3, normal);
-    bresenham(&rasProt, triangle[2], triangle[0], c1, c2, c3, normal);
-    scanline(&rasProt, c1, c2, c3, normal);
-    return rasProt;
+        return -1;
+    bresenham(rasProt, triangle[0], triangle[1], c1, c2, c3, normal);
+    bresenham(rasProt, triangle[1], triangle[2], c1, c2, c3, normal);
+    bresenham(rasProt, triangle[2], triangle[0], c1, c2, c3, normal);
+    scanline(rasProt, c1, c2, c3, normal);
+    return 0;
 }
 
 // Esta función se encarga de hacer el cálculo de las líneas a dibujar junto con el zBuffer de cada pixel
@@ -164,7 +162,8 @@ void drawFace2Raster(pixels** rasProt, faces* fList, int fListSize, edges* eList
     vertexesProj auxVP[3];
     vertexes auxV[3];
     double normal[3];
-    pixels** auxRasProt;
+    pixels** auxRasProt=NULL;
+    auxRasProt=createRasProtX(1080, 1920);;
     double angle;
     for (int i = 0; i < fListSize; ++i) {
         auxV[0]=vList[eList[fList[i].e1].v1];
@@ -174,13 +173,14 @@ void drawFace2Raster(pixels** rasProt, faces* fList, int fListSize, edges* eList
         normal[1]=(((auxV[1].z-auxV[0].z)*(auxV[2].x-auxV[1].x))-((auxV[1].x-auxV[0].x)*(auxV[2].z-auxV[1].z)));
         normal[2]=(((auxV[1].x-auxV[0].x)*(auxV[2].y-auxV[1].y))-((auxV[1].y-auxV[0].y)*(auxV[2].x-auxV[1].x)));
         angle=((normal[2]*-1)/((sqrt((normal[0]*normal[0])+(normal[1]*normal[1])+(normal[2]*normal[2])))));
-        angle=acos(angle);
+        angle=acos(angle)*(180/PI);
         if(angle>=90 && angle<=180){
+            cleanRasProt(auxRasProt, 1080, 1920);
+            //printf("\n%lf\t%d\n", angle, i);
             auxVP[0]=vListProj[eList[fList[i].e1].v1];
             auxVP[1]=vListProj[eList[fList[i].e2].v1];
             auxVP[2]=vListProj[eList[fList[i].e3].v1];
-            auxRasProt= triangleDraw(auxVP, 38, 220, 226, normal);
-            if(auxRasProt!=NULL){
+            if(triangleDraw(auxVP, 38, 220, 226, normal, &auxRasProt)==0){
                 for (int j = 0; j < 1080; ++j) {
                     for (int k = 0; k < 1920; ++k) {
                         if(auxRasProt[j][k].zBuffer>rasProt[j][k].zBuffer){
@@ -230,4 +230,19 @@ pixels* createRasProtY(int columns){
         rasProt[i].normal[2]=0;
     }
     return rasProt;
+}
+
+// Esta función limpia el raster prototipo
+void cleanRasProt(pixels** rasProt, int columns, int rows){
+    for (int i = 0; i < columns; ++i) {
+        for (int j = 0; j < rows; ++j) {
+            rasProt[i][j].r=0;
+            rasProt[i][j].g=0;
+            rasProt[i][j].b=0;
+            rasProt[i][j].zBuffer=-100000;
+            rasProt[i][j].normal[0]=0;
+            rasProt[i][j].normal[1]=0;
+            rasProt[i][j].normal[2]=0;
+        }
+    }
 }
