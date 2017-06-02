@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "objLists.h"
 
 // Esta función se encarga de cargar los datos del archivo RAW a la lista de vértices
@@ -44,7 +45,7 @@ int eListCreator(edges** eList, char* fileName, int vListSize, vertexes* vList, 
 }
 
 // Esta función se encarga de cargar los datos de caras en la lista de caras
-int fListCreator(faces** fList, char* fileName, int vListSize, vertexes* vList, int eListSize, edges* eList, int* size){
+int fListCreator(faces** fList, char* fileName, int vListSize, vertexes** vList, int eListSize, edges* eList, int* size){
     FILE * f;
     *fList=NULL;
     vertexes auxV[3];
@@ -86,6 +87,9 @@ int addPoint(vertexes** vList, vertexes point, int* size) {
         vList[0][(*size)-1].x=point.x;
         vList[0][(*size)-1].y=point.y;
         vList[0][(*size)-1].z=point.z;
+        vList[0][(*size)-1].normal[0]=0;
+        vList[0][(*size)-1].normal[1]=0;
+        vList[0][(*size)-1].normal[2]=0;
         return 1; //Retorna 1 que significa que el punto se agregó
     }
     return 0; //Retorna 0 que significa que el punto no fue agregado
@@ -116,15 +120,36 @@ int addEdge(edges** eList, vertexes point1, vertexes point2, vertexes* vList, in
 }
 
 // Esta función se encarga de agregar las aristas correspondientes a la cara
-int addFace(faces** fList, edges* eList, int eListSize, vertexes* auxV, vertexes* vList, int vListSize, int* size){
+int addFace(faces** fList, edges* eList, int eListSize, vertexes* auxV, vertexes** vList, int vListSize, int* size){
     faces* fListAux;
     edges aux[3];
-    aux[0].v1=searchPoint(vList, auxV[0], vListSize);
-    aux[0].v2=searchPoint(vList, auxV[1], vListSize);
-    aux[1].v1=searchPoint(vList, auxV[1], vListSize);
-    aux[1].v2=searchPoint(vList, auxV[2], vListSize);
-    aux[2].v1=searchPoint(vList, auxV[2], vListSize);
-    aux[2].v2=searchPoint(vList, auxV[0], vListSize);
+    double normal[3], length;
+    aux[0].v1=searchPoint(*vList, auxV[0], vListSize);
+    aux[0].v2=searchPoint(*vList, auxV[1], vListSize);
+    aux[1].v1=searchPoint(*vList, auxV[1], vListSize);
+    aux[1].v2=searchPoint(*vList, auxV[2], vListSize);
+    aux[2].v1=searchPoint(*vList, auxV[2], vListSize);
+    aux[2].v2=searchPoint(*vList, auxV[0], vListSize);
+    // Calculo de la normal de la cara (con normalización)
+    normal[0]=(((auxV[1].y-auxV[0].y)*(auxV[2].z-auxV[1].z))-((auxV[1].z-auxV[0].z)*(auxV[2].y-auxV[1].y)));
+    normal[1]=(((auxV[1].z-auxV[0].z)*(auxV[2].x-auxV[1].x))-((auxV[1].x-auxV[0].x)*(auxV[2].z-auxV[1].z)));
+    normal[2]=(((auxV[1].x-auxV[0].x)*(auxV[2].y-auxV[1].y))-((auxV[1].y-auxV[0].y)*(auxV[2].x-auxV[1].x)));
+    length=sqrt(pow(normal[0], 2)+pow(normal[1], 2) + pow(normal[2],2));
+    normal[0]/=length;
+    normal[1]/=length;
+    normal[2]/=length;
+    // Asignación de las normales a los vertices
+    for (int i = 0; i < 3; ++i) {
+        if(vList[0][aux[i].v1].normal[0]==0 && vList[0][aux[i].v1].normal[1]==0 && vList[0][aux[i].v1].normal[2]==0){
+            vList[0][aux[i].v1].normal[0]=normal[0];
+            vList[0][aux[i].v1].normal[1]=normal[1];
+            vList[0][aux[i].v1].normal[2]=normal[2];
+        } else{
+            vList[0][aux[i].v1].normal[0]+=(vList[0][aux[i].v1].normal[0]-normal[0])/2;
+            vList[0][aux[i].v1].normal[1]+=(vList[0][aux[i].v1].normal[1]-normal[1])/2;
+            vList[0][aux[i].v1].normal[2]+=(vList[0][aux[i].v1].normal[2]-normal[2])/2;
+        }
+    }
     ++(*size);
     fListAux=realloc(*fList, ((*size)+1)* sizeof(faces));
     *fList=fListAux;
@@ -189,35 +214,6 @@ int searchEdge(edges* eList, edges e1, int size){
     return -1; //Retorna -1 que significa que la arista no existe en la lista
 }
 
-// Esta función ordena la lista de vértices usando mergeSort
-void sortVList(vertexes* vList, int vListSize){
-    if(vListSize == 1)
-        return;
-
-    int size1=vListSize/2, size2=vListSize-size1;
-    sortVList(vList, size1);
-    sortVList(vList+size1, size2);
-    mergeSort(vList, size1, size2);
-    return;
-}
-
-// El criterio para el orden es de menor a mayor dado el punto X
-void mergeSort(vertexes *vList, int size1, int size2) {
-    vertexes temp[size1+size2];
-    int ptr1=0, ptr2=0;
-
-    while (ptr1+ptr2 < size1+size2) {
-        if (ptr1 < size1 && vList[ptr1].x <= vList[size1+ptr2].x || ptr1 < size1 && ptr2 >= size2)
-            temp[ptr1+ptr2] = vList[ptr1++];
-
-        if (ptr2 < size2 && vList[size1+ptr2].x < vList[ptr1].x || ptr2 < size2 && ptr1 >= size1)
-            temp[ptr1+ptr2] = vList[size1+ptr2++];
-    }
-
-    for (int i=0; i < size1+size2; i++)
-        vList[i] = temp[i];
-}
-
 // Esta función se encarga de hacer la proyección de perspectiva
 int vListProjection(vertexes* vList, int vListSize, vertexesProj** vListProj, double Ez, double Ex, double Ey){
     for (int i = 0; i < vListSize; ++i) {
@@ -234,6 +230,9 @@ int vListProjection(vertexes* vList, int vListSize, vertexesProj** vListProj, do
         vListProj[0][i].x=(int)(vList[i].x*Ez)/10;
         vListProj[0][i].y=(int)(vList[i].y*Ez)/10;
         vListProj[0][i].zBuf=vList[i].z;
+        vListProj[0][i].normal[0]=vList[i].normal[0];
+        vListProj[0][i].normal[1]=vList[i].normal[1];
+        vListProj[0][i].normal[2]=vList[i].normal[2];
     }
 }
 

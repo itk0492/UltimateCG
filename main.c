@@ -9,7 +9,7 @@
 
 int main(int argc, char** argv) {
     unsigned char*** raster;          // Variable para alojar el raster
-    pixels** rasProt;
+    pixels** rasProt;   // Variable para alojar el raster prototipo
     vertexes* vList;    // Variable para alojar la lista de vértices
     edges* eList;       // Variable para alojar la lista de aristas
     faces* fList;       // Variable para alojar la lista de caras
@@ -27,18 +27,20 @@ int main(int argc, char** argv) {
     printf("\nvList: %d", vListSize);
     eListCreator(&eList, file, vListSize, vList, &eListSize);
     printf("\neList: %d", eListSize);
-    fListCreator(&fList, file, vListSize, vList, eListSize, eList, &fListSize);
+    fListCreator(&fList, file, vListSize, &vList, eListSize, eList, &fListSize);
     printf("\nfList: %d", fListSize);
     vListProjCreator(&vListProj, vListSize);
     getMiddle(&mid, vList, vListSize);
     //scaling(&vList, vListSize, 100);
     //translation(&vList, vListSize, -100, 0, 0);
-    //zAxisRotation(&vList, vListSize, 1, mid[0], mid[1], mid[2]);
+    //zAxisRotation(&vList, vListSize, 180, mid[0], mid[1], mid[2]);
     vListProjection(vList, vListSize, &vListProj, 40, 0, 0);
     printf("\nvListProj created and projected.");
     drawFace2Raster(rasProt, fList, fListSize, eList, vListProj, vList, raster);
     printf("\nFaces draw.");
     printRaster2FileRGB("gen.ppm", raster, 1080, 1920);
+    cleanRasProt(rasProt, 1080, 1920);
+    cleanRasterRGB(raster, 1080, 1920);
     printf("\n%lf %lf %lf %lf %lf", vList[0].x, vList[1].x, vList[2].x, vList[500].x, vList[vListSize-1].x);
     return 0;
 }

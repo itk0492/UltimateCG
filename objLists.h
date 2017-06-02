@@ -10,6 +10,7 @@ typedef struct vertex{
     double x;
     double y;
     double z;
+    double normal[3];
 }vertexes;
 
 // Estructura para almacenar las aristas a través de vértices.
@@ -28,17 +29,17 @@ typedef struct face{
 typedef struct vertexP{
     int x;
     int y;
-    double zBuf;
+    double zBuf, normal[3];
 }vertexesProj;
 
 int vListCreator(vertexes** vList, char* fileName, int* size);
 int eListCreator(edges** eList, char* fileName, int vListSize, vertexes* vList, int* size);
-int fListCreator(faces** fList, char* fileName, int vListSize, vertexes* vList, int eListSize, edges* eList, int* size);
+int fListCreator(faces** fList, char* fileName, int vListSize, vertexes** vList, int eListSize, edges* eList, int* size);
 int vListProjCreator(vertexesProj** vListProj, int vListSize);
 
 int addPoint(vertexes** vList, vertexes point, int* size);
 int addEdge(edges** eList, vertexes point1, vertexes point2, vertexes* vList, int vListSize, int* size);
-int addFace(faces** fList, edges* eList, int eListSize, vertexes* auxV, vertexes* vList, int vListSize, int* size);
+int addFace(faces** fList, edges* eList, int eListSize, vertexes* auxV, vertexes** vList, int vListSize, int* size);
 
 int searchPoint(vertexes* vList, vertexes point, int size);
 int searchEdge(edges* eList, edges e1, int size);
