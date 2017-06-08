@@ -9,7 +9,7 @@
 
 #define PI 3.14159265
 #define ka 0.7
-#define kd 0.5
+#define kd 0.6
 #define ks 0.1
 
 typedef struct pix{

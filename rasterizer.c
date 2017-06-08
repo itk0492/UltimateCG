@@ -9,8 +9,10 @@
 
 double amb[3]={11, 25, 25};
 double abc[3]={.004, .008, .0009};
-double radial[3]={250, 350, 40};
+double radial[3]={800, 550, 180};
 double radialRGB[3]={18, 226, 223};
+double camPos[3]={0, 0, 65};
+double n=2;
 
 // Esta función se encarga de alojar memoria dependiendo del tamaño filas del raster.
 unsigned char*** createRasterX(int rows, int columns, int colors){
@@ -98,9 +100,9 @@ int triangleDraw(vertexesProj *triangle, int c1, int c2, int c3, pixels*** rasPr
 // Esta función se encarga de hacer el cálculo de las líneas a dibujar junto con el zBuffer de cada pixel
 void bresenham(pixels*** raster1, vertexesProj point1, vertexesProj point2, int c1, int c2, int c3){
     int x1=point1.x, x2=point2.x, y1=point1.y, y2=point2.y;
-    double dz, zB, dxN, dyN, dzN, distance, attenuation, dotProd;
+    double dz, zB, dxN, dyN, dzN, distance, attenuation, dotProd, dotProdSpec;
     double totColor[3];
-    double radVector[3], length;
+    double radVector[3], length, specVector[3], camVector[3], lenghtCamVec;
     double normal[3];
     normal[0]=point1.normal[0];
     normal[1]=point1.normal[1];
@@ -114,6 +116,7 @@ void bresenham(pixels*** raster1, vertexesProj point1, vertexesProj point2, int 
     int dy = abs(y2-y1), sy = y1<y2 ? 1 : -1;
     int err = (dx>dy ? dx : -dy)/2, e2;
     for(;;) {
+        // Luz difusa
         // Cálculo del vector desde el punto emisor de luz hacia el pixel
         radVector[0]=(x1-radial[0]);
         radVector[1]=(y1-radial[1]);
@@ -129,11 +132,28 @@ void bresenham(pixels*** raster1, vertexesProj point1, vertexesProj point2, int 
         // Cálculo del factor de atenuación
         distance=sqrt(pow(x1-radial[0], 2)+pow(y1-radial[1], 2)+pow(zB-radial[2], 2));
         attenuation=(1/((abc[0]*pow(distance, 2)+(abc[1]*distance)+abc[2])));
+        // Luz especular
+        // Cálculo del vector de reflexión
+        specVector[0]=radVector[0]-(2*normal[0]*dotProd);
+        specVector[1]=radVector[1]-(2*normal[1]*dotProd);
+        specVector[2]=radVector[2]-(2*normal[2]*dotProd);
+        // Cálculo del vector de la cámara al pixel
+        camVector[0]=(x1-camPos[0]);
+        camVector[1]=(y1-camPos[1]);
+        camVector[3]=(zB-camPos[2]);
+        // Longitud del vector de la cámara al pixel
+        lenghtCamVec=sqrt(pow(camVector[0], 2)+pow(camVector[1],2)+pow(camVector[2],2));
+        // Normalización del vector de la cámara al pixel
+        camVector[0]/=lenghtCamVec;
+        camVector[1]/=lenghtCamVec;
+        camVector[2]/=lenghtCamVec;
+        // Cálculo del producto punto entre el vector de la cámara y el vector de reflexión
+        dotProdSpec=((specVector[0]*camVector[0])+(specVector[1]*camVector[1])+(specVector[2]*camVector[2]));
         // Suma de las luces
-        totColor[0]=c1 + (amb[0]*ka) + (kd*attenuation*radialRGB[0]*dotProd);
-        totColor[1]=c2 + (amb[1]*ka) + (kd*attenuation*radialRGB[1]*dotProd);
-        totColor[2]=c3 + (amb[2]*ka) + (kd*attenuation*radialRGB[2]*dotProd);
-        printf("%lf\t%lf\t%d\t%lf\t%lf\n", distance, attenuation, c3, totColor[2], dotProd);
+        totColor[0]=c1 + (amb[0]*ka) + (kd*attenuation*radialRGB[0]*dotProd) + (ks/*radialRGB[0]*/*pow(fmax(0, dotProdSpec), n));
+        totColor[1]=c2 + (amb[1]*ka) + (kd*attenuation*radialRGB[1]*dotProd) + (ks/*radialRGB[1]*/*pow(fmax(0, dotProdSpec), n));
+        totColor[2]=c3 + (amb[2]*ka) + (kd*attenuation*radialRGB[2]*dotProd) + (ks/*radialRGB[2]*/*pow(fmax(0, dotProdSpec), n));
+        //printf("%lf\t%lf\t%d\t%lf\t%lf\n", distance, attenuation, c3, totColor[2], dotProd);
         //printf("%d\t%d\t%lf\n", x1, y1, zB);
         raster1[0][y1][x1].r = (unsigned char) (floor(totColor[0] > 255 ? 255 : totColor[0]));
         raster1[0][y1][x1].g = (unsigned char) (floor(totColor[1] > 255 ? 255 : totColor[1]));
@@ -239,7 +259,7 @@ void drawFace2Raster(pixels** rasProt, faces* fList, int fListSize, edges* eList
             auxVP[0]=vListProj[eList[fList[i].e1].v1];
             auxVP[1]=vListProj[eList[fList[i].e2].v1];
             auxVP[2]=vListProj[eList[fList[i].e3].v1];
-            if(triangleDraw(auxVP, 21, 37, 38, &auxRasProt)==0){
+            if(triangleDraw(auxVP, 25, 63, 63, &auxRasProt)==0){
                 for (int j = 0; j < 1080; ++j) {
                     for (int k = 0; k < 1920; ++k) {
                         // Aplicación del zBuffer para colocar los triangulos en el rasterProt
@@ -264,7 +284,9 @@ void drawFace2Raster(pixels** rasProt, faces* fList, int fListSize, edges* eList
             raster[l][i][1]=rasProt[l][i].g;
             raster[l][i][2]=rasProt[l][i].b;
         }
+        free(auxRasProt[l]);
     }
+    free(auxRasProt);
 }
 
 // Esta función crea un prototipo de raster que contiene los colores junto con el zBuffer y la normal de cada pixel

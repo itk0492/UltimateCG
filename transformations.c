@@ -11,6 +11,9 @@ void xAxisRotation(vertexes** vList, int vListSize, double theta, double CoRx, d
     for (int i = 0; i < vListSize; ++i) {
         vList[0][i].y=(vList[0][i].y*(cos(theta*(radi)))+vList[0][i].z*(sin(theta*(radi))));
         vList[0][i].z=(vList[0][i].z*(cos(theta*(radi)))+vList[0][i].y*(-sin(theta*radi)));
+        vList[0][i].normal[0]=0;
+        vList[0][i].normal[1]=0;
+        vList[0][i].normal[2]=0;
     }
     translation(vList, vListSize, CoRx, CoRy, CoRz);
     return;

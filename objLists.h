@@ -47,8 +47,10 @@ int searchEdge(edges* eList, edges e1, int size);
 void sortVList(vertexes* vList, int vListSize);
 void mergeSort(vertexes *vList, int size1, int size2);
 
-int vListProjection(vertexes* vList, int vListSize, vertexesProj** vListProj, double Ez, double Ex, double Ey);
+int vListProjection(vertexes* vList, int vListSize, vertexesProj** vListProj, double f, double Ex, double Ey);
 
 void getMiddle(double** mid, vertexes* vList, int vListSize);
+
+void recalcNormals(faces* fList, int fListSize, edges* eList, vertexes** vList);
 
 #endif //FINAL2_OBJLISTS_H

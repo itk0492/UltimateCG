@@ -215,20 +215,20 @@ int searchEdge(edges* eList, edges e1, int size){
 }
 
 // Esta función se encarga de hacer la proyección de perspectiva
-int vListProjection(vertexes* vList, int vListSize, vertexesProj** vListProj, double Ez, double Ex, double Ey){
+int vListProjection(vertexes* vList, int vListSize, vertexesProj** vListProj, double f, double Ex, double Ey){
     for (int i = 0; i < vListSize; ++i) {
         /*
-        vListProj[0][i].x=((Ez*(vList[i].x-Ex))/(Ez+vList[i].z))+Ex;
-        vListProj[0][i].y=((Ez*(vList[i].y-Ey))/(Ez+vList[i].z))+Ey;
+        vListProj[0][i].x=((f*(vList[i].x-Ex))/(f+vList[i].z))+Ex;
+        vListProj[0][i].y=((f*(vList[i].y-Ey))/(f+vList[i].z))+Ey;
         vListProj[0][i].zBuf=vList[i].z;
          */
         /*
-        vListProj[0][i].x=(vList[i].x)/(1-(vList[i].z/Ez));
-        vListProj[0][i].y=(vList[i].y)/(1-(vList[i].z/Ez));
+        vListProj[0][i].x=(vList[i].x)/(1-(vList[i].z/f));
+        vListProj[0][i].y=(vList[i].y)/(1-(vList[i].z/f));
         vListProj[0][i].zBuf=vList[i].z;
          */
-        vListProj[0][i].x=(int)(vList[i].x*Ez)/10;
-        vListProj[0][i].y=(int)(vList[i].y*Ez)/10;
+        vListProj[0][i].x=(int)(vList[i].x*f)/10;
+        vListProj[0][i].y=(int)(vList[i].y*f)/10;
         vListProj[0][i].zBuf=vList[i].z;
         vListProj[0][i].normal[0]=vList[i].normal[0];
         vListProj[0][i].normal[1]=vList[i].normal[1];
@@ -260,4 +260,45 @@ void getMiddle(double** mid, vertexes* vList, int vListSize){
     mid[0][1]=miny+((maxy-miny)/2);
     mid[0][2]=minz+((maxz-minz)/2);
     return;
+}
+
+// Esta función recalcula las normales
+void recalcNormals(faces* fList, int fListSize, edges* eList, vertexes** vList){
+    double normal[3], length;
+    for (int i = 0; i < fListSize; ++i) {
+        normal[0]=(((vList[0][eList[fList[i].e2].v1].y-vList[0][eList[fList[i].e1].v1].y)*(vList[0][eList[fList[i].e3].v1].z-vList[0][eList[fList[i].e2].v1].z))-((vList[0][eList[fList[i].e2].v1].z-vList[0][eList[fList[i].e1].v1].z)*(vList[0][eList[fList[i].e3].v1].y-vList[0][eList[fList[i].e2].v1].y)));
+        normal[1]=(((vList[0][eList[fList[i].e2].v1].z-vList[0][eList[fList[i].e1].v1].z)*(vList[0][eList[fList[i].e3].v1].x-vList[0][eList[fList[i].e2].v1].x))-((vList[0][eList[fList[i].e2].v1].x-vList[0][eList[fList[i].e1].v1].x)*(vList[0][eList[fList[i].e3].v1].z-vList[0][eList[fList[i].e2].v1].z)));
+        normal[2]=(((vList[0][eList[fList[i].e2].v1].x-vList[0][eList[fList[i].e1].v1].x)*(vList[0][eList[fList[i].e3].v1].y-vList[0][eList[fList[i].e2].v1].y))-((vList[0][eList[fList[i].e2].v1].y-vList[0][eList[fList[i].e1].v1].y)*(vList[0][eList[fList[i].e3].v1].x-vList[0][eList[fList[i].e2].v1].x)));
+        length=sqrt(pow(normal[0], 2)+pow(normal[1], 2) + pow(normal[2],2));
+        normal[0]/=length;
+        normal[1]/=length;
+        normal[2]/=length;
+        if(vList[0][eList[fList[i].e1].v1].normal[0]==0 && vList[0][eList[fList[i].e1].v1].normal[1]==0 && vList[0][eList[fList[i].e1].v1].normal[2]==0){
+            vList[0][eList[fList[i].e1].v1].normal[0]=normal[0];
+            vList[0][eList[fList[i].e1].v1].normal[1]=normal[1];
+            vList[0][eList[fList[i].e1].v1].normal[2]=normal[2];
+        } else{
+            vList[0][eList[fList[i].e1].v1].normal[0]+=(vList[0][eList[fList[i].e1].v1].normal[0]-normal[0])/2;
+            vList[0][eList[fList[i].e1].v1].normal[1]+=(vList[0][eList[fList[i].e1].v1].normal[1]-normal[1])/2;
+            vList[0][eList[fList[i].e1].v1].normal[2]+=(vList[0][eList[fList[i].e1].v1].normal[2]-normal[2])/2;
+        }
+        if(vList[0][eList[fList[i].e2].v1].normal[0]==0 && vList[0][eList[fList[i].e2].v1].normal[1]==0 && vList[0][eList[fList[i].e2].v1].normal[2]==0){
+            vList[0][eList[fList[i].e2].v1].normal[0]=normal[0];
+            vList[0][eList[fList[i].e2].v1].normal[1]=normal[1];
+            vList[0][eList[fList[i].e2].v1].normal[2]=normal[2];
+        } else{
+            vList[0][eList[fList[i].e2].v1].normal[0]+=(vList[0][eList[fList[i].e2].v1].normal[0]-normal[0])/2;
+            vList[0][eList[fList[i].e2].v1].normal[1]+=(vList[0][eList[fList[i].e2].v1].normal[1]-normal[1])/2;
+            vList[0][eList[fList[i].e2].v1].normal[2]+=(vList[0][eList[fList[i].e2].v1].normal[2]-normal[2])/2;
+        }
+        if(vList[0][eList[fList[i].e3].v1].normal[0]==0 && vList[0][eList[fList[i].e3].v1].normal[1]==0 && vList[0][eList[fList[i].e3].v1].normal[2]==0){
+            vList[0][eList[fList[i].e3].v1].normal[0]=normal[0];
+            vList[0][eList[fList[i].e3].v1].normal[1]=normal[1];
+            vList[0][eList[fList[i].e3].v1].normal[2]=normal[2];
+        } else{
+            vList[0][eList[fList[i].e3].v1].normal[0]+=(vList[0][eList[fList[i].e3].v1].normal[0]-normal[0])/2;
+            vList[0][eList[fList[i].e3].v1].normal[1]+=(vList[0][eList[fList[i].e3].v1].normal[1]-normal[1])/2;
+            vList[0][eList[fList[i].e3].v1].normal[2]+=(vList[0][eList[fList[i].e3].v1].normal[2]-normal[2])/2;
+        }
+    }
 }
